@@ -1,8 +1,3 @@
 This is my Final Project for Digital Electronics - 
 
-I am running an FM radio into a Teensy audio shield that has a Chorus and a Reverb effect from the Teensy Audio Library. 
-There is also a Teensy 3.5 working with the 3.2 under the audio shield to take information from a collection of 7 knobs
-that control the effects.
-
-the "Digital_Final" code is the code running on the 3.5.
-the "AudioSheild" code is the code running on the Audio Shield.
+The 3.5 code controls the knobs, and the 3.2 code is for the effect processing.
