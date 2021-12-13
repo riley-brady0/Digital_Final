@@ -1,0 +1,122 @@
+#include <Audio.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
+#include <SerialFlash.h>
+
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s2;           //xy=139,851
+AudioEffectBitcrusher    bitcrusher1;    //xy=332,942
+AudioEffectFreeverb      freeverb1;      //xy=387,760
+AudioMixer4              mixer1;         //xy=548,795
+AudioMixer4              mixer2;         //xy=548,882
+AudioMixer4              mixer3;         //xy=710,832
+AudioOutputI2S           i2s1;           //xy=873,831
+AudioConnection          patchCord1(i2s2, 0, mixer1, 2);
+AudioConnection          patchCord2(i2s2, 1, mixer2, 2);
+AudioConnection          patchCord3(i2s2, 1, bitcrusher1, 0);
+AudioConnection          patchCord4(bitcrusher1, 0, mixer2, 1);
+AudioConnection          patchCord5(bitcrusher1, freeverb1);
+AudioConnection          patchCord6(freeverb1, 0, mixer1, 1);
+AudioConnection          patchCord7(mixer1, 0, mixer3, 1);
+AudioConnection          patchCord8(mixer2, 0, mixer3, 2);
+AudioConnection          patchCord9(mixer3, 0, i2s1, 0);
+AudioConnection          patchCord10(mixer3, 0, i2s1, 1);
+AudioControlSGTL5000     sgtl5000_1;     //xy=469,627
+// GUItool: end automatically generated code
+
+const int myInput = AUDIO_INPUT_LINEIN;
+//const int myInput = AUDIO_INPUT_MIC;
+
+int stopButton = 17;
+int serialVal = 0;
+
+void setup() {
+
+  // Audio connections require memory to work.  For more
+  // detailed information, see the MemoryAndCpuUsage example
+  AudioMemory(12);
+
+  // Enable the audio shield, select input, and enable output
+  sgtl5000_1.enable();
+  sgtl5000_1.inputSelect(myInput);
+  sgtl5000_1.volume(0.5);
+
+  Serial.begin(9600);
+  Serial1.begin(9600);
+}
+
+void loop() {
+  
+  if (Serial1.available() >= 8) {
+    int val = Serial1.read();
+
+    if (val == 255) {
+      //collecting all (0-100) numbers from the 3.5
+      int val1 = Serial1.read();
+      int val2 = Serial1.read();
+      int val3 = Serial1.read();
+      int val4 = Serial1.read();
+      int val5 = Serial1.read();
+      int val6 = Serial1.read();
+      int val7 = Serial1.read();
+
+      //Defining and renaming pot information
+      //Verb
+      float verbSize = val1 / 100.0; //Room Size
+      float verbDamping = val2 / 100.0; //Damping
+      float verbMix = val3 / 25.0; //Mix
+      //Delay
+      int bitAMT = map(val4, 0, 100, 0, 16); //Bits
+      float sampleAMT = map(val5, 0, 100, 0, 44100); //Sample rate
+      float bitcrushMix = val6 / 50.0; //Mix
+
+      //Master
+      float masterMix = val7 / 50.0; //Mix
+
+      //Verb effect Manipulation
+      freeverb1.roomsize(verbSize);
+      freeverb1.damping(verbDamping);
+      
+      mixer1.gain(0, 0);            // unused, gain 0
+      mixer1.gain(1, verbMix);   // freeverb (wet) gain
+      mixer1.gain(2, 1);            // dry gain
+      mixer1.gain(3, 0);            // unused, gain 0
+
+      //Bitcrusher effect Manipulation
+      bitcrusher1.bits(bitAMT);
+      bitcrusher1.sampleRate(sampleAMT);
+      mixer2.gain(0, 1);            // unused, gain 0
+      mixer2.gain(1, bitcrushMix);     // chorus (wet) gain
+      mixer2.gain(2, 1);            // dry gain
+      mixer2.gain(3, 1);            // unused, gain 0
+
+      //Merging Channels
+      mixer3.gain(0, 0);            // unused, gain 0
+      mixer3.gain(1, masterMix);         // Reverb Signal
+      mixer3.gain(2, masterMix);         // Chorus Signal
+      mixer3.gain(3, 0);            // unused, gain 0
+
+      //Test Display
+      //Verb
+      Serial.print("VERB:    ");
+      Serial.print(verbSize);
+      Serial.print(", ");
+      Serial.print(verbDamping);
+      Serial.print(", ");
+      Serial.print(verbMix);
+      Serial.print(",      ");
+      //Delay
+      Serial.print("BITCRUSH:    ");
+      Serial.print(bitAMT);
+      Serial.print(", ");
+      Serial.print(sampleAMT);
+      Serial.print(", ");
+      Serial.print(bitcrushMix);
+      Serial.print(",      ");
+      //Master
+      Serial.print("MASTER:   ");
+      Serial.println(masterMix);
+    }
+  }
+}
